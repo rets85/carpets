@@ -1,31 +1,63 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const { renderMetaTags, renderStructuredData, renderPage, generateSitemap } = require('./ssr');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
+const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 const DATA_FILE = path.join(__dirname, 'cms-data.json');
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 
 // Load CMS data
 function loadData() {
   if (fs.existsSync(DATA_FILE)) {
     return JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
   }
-  // Initialize with defaults from cms-defaults.json
   const defaults = JSON.parse(fs.readFileSync(path.join(__dirname, 'cms-defaults.json'), 'utf-8'));
   fs.writeFileSync(DATA_FILE, JSON.stringify(defaults, null, 2));
   return defaults;
 }
 
-// GET all CMS data
+// Read HTML template once
+const templatePath = path.join(__dirname, 'public', 'index.html');
+function getTemplate() {
+  return fs.readFileSync(templatePath, 'utf-8');
+}
+
+// Render full page with SSR content + meta tags
+function renderSSRPage(reqPath) {
+  const CMS = loadData();
+  const template = getTemplate();
+  const meta = renderMetaTags(reqPath, CMS, BASE_URL);
+  const structuredData = renderStructuredData(CMS);
+  const pageContent = renderPage(reqPath, CMS);
+
+  let html = template;
+
+  // Replace <title> and inject meta tags into <head>
+  html = html.replace(
+    /<title>.*?<\/title>/,
+    meta + '\n    ' + structuredData
+  );
+
+  // Inject SSR content into <main id="app">
+  html = html.replace(
+    '<main id="app"></main>',
+    `<main id="app">${pageContent}</main>`
+  );
+
+  return html;
+}
+
+// --- API Routes ---
+
 app.get('/api/content', (req, res) => {
   res.json(loadData());
 });
 
-// GET content for a specific page
 app.get('/api/content/:page', (req, res) => {
   const data = loadData();
   const page = req.params.page;
@@ -36,7 +68,6 @@ app.get('/api/content/:page', (req, res) => {
   }
 });
 
-// UPDATE content for a specific page
 app.put('/api/content/:page', (req, res) => {
   const data = loadData();
   const page = req.params.page;
@@ -45,7 +76,6 @@ app.put('/api/content/:page', (req, res) => {
   res.json({ success: true, data: data[page] });
 });
 
-// UPDATE a specific field
 app.patch('/api/content/:page', (req, res) => {
   const data = loadData();
   const page = req.params.page;
@@ -55,7 +85,6 @@ app.patch('/api/content/:page', (req, res) => {
   res.json({ success: true, data: data[page] });
 });
 
-// Quote form submission
 app.post('/api/quote', (req, res) => {
   const quotesFile = path.join(__dirname, 'quotes.json');
   let quotes = [];
@@ -67,7 +96,6 @@ app.post('/api/quote', (req, res) => {
   res.json({ success: true, message: 'Quote request received!' });
 });
 
-// Contact form submission
 app.post('/api/contact', (req, res) => {
   const contactFile = path.join(__dirname, 'contacts.json');
   let contacts = [];
@@ -79,7 +107,6 @@ app.post('/api/contact', (req, res) => {
   res.json({ success: true, message: 'Message received!' });
 });
 
-// Newsletter signup
 app.post('/api/newsletter', (req, res) => {
   const nlFile = path.join(__dirname, 'newsletter.json');
   let subs = [];
@@ -91,9 +118,44 @@ app.post('/api/newsletter', (req, res) => {
   res.json({ success: true });
 });
 
-// SPA fallback - serve index.html for all non-API, non-static routes
+// --- SEO Routes ---
+
+app.get('/robots.txt', (req, res) => {
+  res.type('text/plain').send(
+`User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api/
+
+Sitemap: ${BASE_URL}/sitemap.xml`
+  );
+});
+
+app.get('/sitemap.xml', (req, res) => {
+  const CMS = loadData();
+  res.type('application/xml').send(generateSitemap(BASE_URL, CMS));
+});
+
+// --- SSR Page Routes ---
+// Define explicit routes for SSR so each page gets proper meta + content
+
+const ssrRoutes = [
+  '/', '/quote', '/products', '/about', '/blog', '/faq',
+  '/locations', '/contact', '/admin',
+  '/services/carpet', '/services/upholstery', '/services/tile',
+  '/services/hardwood', '/services/rug', '/services/stone',
+  '/services/water', '/services/vehicle',
+];
+
+ssrRoutes.forEach(route => {
+  app.get(route, (req, res) => {
+    res.send(renderSSRPage(route));
+  });
+});
+
+// SPA fallback for any unmatched routes
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.send(renderSSRPage(req.path));
 });
 
 app.listen(PORT, () => {

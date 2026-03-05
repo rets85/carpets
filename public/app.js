@@ -295,183 +295,199 @@ function renderHome() {
 }
 
 function renderQuote() {
-  const params = new URLSearchParams(window.location.search);
-  const isCommercial = params.get('type') === 'commercial';
+  const pricing = CMS.pricing || { categories: [], hiddenFee: { label: 'Service Fee', amount: 0 } };
+  // calcState: { catIdx_itemIdx: { qty, addons: { addonIdx: bool } } }
+  window._calcState = window._calcState || {};
 
   document.getElementById('app').innerHTML = `
-    <div class="quote-page">
-      <div class="quote-page-hero">
-        <a href="/" data-link style="color:var(--primary-light);font-size:0.9rem;">← Back</a>
-        <h1>Build Your Quote</h1>
-        <p>Please enter your ZIP code to get started with your instant quote.</p>
+    <div class="calc-page">
+      <div class="calc-header">
+        <a href="/" data-link class="calc-back">Back</a>
+        <div class="calc-header-text">
+          <h1>NO HASSLE PRICING & CLEANING</h1>
+          <p>Pick your items, see your price instantly. No surprises.</p>
+        </div>
+        <a href="/admin" data-link class="btn btn-sm btn-outline calc-admin-link">Admin</a>
       </div>
-      <div class="quote-steps">
-        <!-- Step 1: ZIP -->
-        <div class="quote-step" id="quoteStep1">
-          <h2><span class="quote-step-num">1</span> Enter Your ZIP Code</h2>
-          <input type="text" id="quoteZip" placeholder="ZIP Code" maxlength="5">
-          <button class="btn btn-primary btn-full" onclick="quoteNext(2)">Continue</button>
-          <p style="margin-top:12px;font-size:0.85rem;opacity:0.6;">Already have an account? <a href="#" style="color:var(--primary-light);">Sign in</a></p>
+      <div class="calc-layout">
+        <div class="calc-main">
+          ${pricing.categories.map((cat, ci) => `
+            <div class="calc-category">
+              <h2 class="calc-category-title">${cat.name}</h2>
+              <div class="calc-items">
+                ${cat.items.map((item, ii) => {
+                  const key = ci + '_' + ii;
+                  return `
+                  <div class="calc-item" data-key="${key}">
+                    <div class="calc-item-info">
+                      <div class="calc-item-name">${item.name}</div>
+                      <div class="calc-item-desc">${item.description}</div>
+                      <div class="calc-item-price">$${item.price} / ${item.unit}</div>
+                    </div>
+                    <div class="calc-item-controls">
+                      <button class="calc-qty-btn" onclick="calcChangeQty('${key}', -1)">-</button>
+                      <span class="calc-qty" id="calcQty_${key}">0</span>
+                      <button class="calc-qty-btn" onclick="calcChangeQty('${key}', 1)">+</button>
+                    </div>
+                    <div class="calc-item-addons" id="calcAddons_${key}" style="display:none;">
+                      ${(item.addons || []).map((addon, ai) => `
+                        <label class="calc-addon-label">
+                          <input type="checkbox" onchange="calcToggleAddon('${key}', ${ai})" /> ${addon.name} (+$${addon.price})
+                        </label>
+                      `).join('')}
+                    </div>
+                  </div>`;
+                }).join('')}
+              </div>
+            </div>
+          `).join('')}
         </div>
-
-        <!-- Step 2: Service Selection (hidden) -->
-        <div class="quote-step" id="quoteStep2" style="display:none;">
-          <h2><span class="quote-step-num">2</span> Select Your Service</h2>
-          <div class="quote-tabs" style="margin-bottom:20px;">
-            <button class="quote-tab ${!isCommercial ? 'active' : ''}" onclick="this.classList.add('active');this.nextElementSibling.classList.remove('active');">For Home</button>
-            <button class="quote-tab ${isCommercial ? 'active' : ''}" onclick="this.classList.add('active');this.previousElementSibling.classList.remove('active');">For Business</button>
+        <div class="calc-sidebar">
+          <div class="calc-sidebar-inner">
+            <h3>Order Summary</h3>
+            <div id="calcSummaryLines" class="calc-summary-lines">
+              <div class="calc-summary-empty">Add items to see your quote</div>
+            </div>
+            <div class="calc-summary-total">
+              <span>Total</span>
+              <span id="calcTotal">$0</span>
+            </div>
+            <button class="btn btn-primary btn-full" onclick="calcSchedule()">Schedule Cleaning</button>
           </div>
-          <div class="quote-services-grid">
-            ${['Carpet Cleaning', 'Upholstery Cleaning', 'Tile & Grout', 'Hardwood Floors', 'Area Rug Cleaning', 'Natural Stone', 'Car/Boat/RV', 'Water Damage'].map(s => `
-              <div class="quote-service-option" onclick="selectQuoteService(this, '${s}')">
-                <span>${s.includes('Carpet') ? '🧹' : s.includes('Upholstery') ? '🛋️' : s.includes('Tile') ? '🔲' : s.includes('Hardwood') ? '🪵' : s.includes('Rug') ? '🟫' : s.includes('Stone') ? '🪨' : s.includes('Car') ? '🚗' : '💧'}</span>
-                <strong>${s}</strong>
-              </div>`).join('')}
-          </div>
-          <button class="btn btn-primary btn-full" onclick="quoteNext(3)">Continue</button>
         </div>
+      </div>
+    </div>
 
-        <!-- Step 3: Details (hidden) -->
-        <div class="quote-step" id="quoteStep3" style="display:none;">
-          <h2><span class="quote-step-num">3</span> How Many Rooms?</h2>
-          <div class="quote-rooms-grid">
-            ${['1', '2', '3', '4', '5', '6+'].map(n => `
-              <div class="quote-room-option" onclick="selectQuoteRoom(this, '${n}')">${n} ${n === '1' ? 'Room' : 'Rooms'}</div>`).join('')}
-          </div>
-          <h2 style="margin-top:24px;"><span class="quote-step-num">+</span> Add-Ons</h2>
-          <div class="quote-services-grid">
-            <div class="quote-service-option" onclick="toggleAddon(this, 'Carpet Protector')"><strong>Carpet Protector</strong></div>
-            <div class="quote-service-option" onclick="toggleAddon(this, 'Deodorizer')"><strong>Deodorizer</strong></div>
-            <div class="quote-service-option" onclick="toggleAddon(this, 'Pet Treatment')"><strong>Pet Treatment</strong></div>
-            <div class="quote-service-option" onclick="toggleAddon(this, 'Stain Removal')"><strong>Stain Removal</strong></div>
-          </div>
-          <button class="btn btn-primary btn-full" onclick="quoteNext(4)">Continue</button>
-        </div>
-
-        <!-- Step 4: Contact Info (hidden) -->
-        <div class="quote-step" id="quoteStep4" style="display:none;">
-          <h2><span class="quote-step-num">4</span> Your Information</h2>
+    <!-- Contact Modal -->
+    <div id="calcModal" class="calc-modal" style="display:none;">
+      <div class="calc-modal-content">
+        <button class="calc-modal-close" onclick="document.getElementById('calcModal').style.display='none'">&times;</button>
+        <h2>Schedule Your Cleaning</h2>
+        <p>Fill in your details and we'll confirm your appointment.</p>
+        <form onsubmit="calcSubmit(event)">
           <div class="form-row">
-            <input type="text" id="quoteName" placeholder="Full Name" required>
-            <input type="email" id="quoteEmail" placeholder="Email Address" required>
+            <input type="text" id="calcName" placeholder="Full Name" required>
+            <input type="email" id="calcEmail" placeholder="Email Address" required>
           </div>
           <div class="form-row">
-            <input type="tel" id="quotePhone" placeholder="Phone Number" required>
+            <input type="tel" id="calcPhone" placeholder="Phone Number" required>
+            <input type="text" id="calcZip" placeholder="ZIP Code" maxlength="5" required>
           </div>
-          <h2 style="margin-top:24px;"><span class="quote-step-num">📅</span> Preferred Date & Time</h2>
           <div class="form-row">
-            <input type="date" id="quoteDate">
-            <select id="quoteTime">
+            <input type="date" id="calcDate">
+            <select id="calcTime">
               <option value="">Select Time</option>
               <option>Morning (8am-12pm)</option>
               <option>Afternoon (12pm-4pm)</option>
               <option>Evening (4pm-8pm)</option>
             </select>
           </div>
-          <button class="btn btn-primary btn-full" onclick="submitQuote()">Get My Free Quote</button>
-        </div>
-
-        <!-- Summary (hidden) -->
-        <div id="quoteSummary" style="display:none;">
-          <div class="quote-summary">
-            <h3>Your Quote Summary</h3>
-            <div id="quoteSummaryLines"></div>
-            <div class="quote-summary-total">
-              <span>Estimated Total</span>
-              <span id="quoteTotalPrice">--</span>
-            </div>
-          </div>
-          <p class="quote-note">This is an estimate. Final pricing may vary based on condition and square footage. A Shiny Rhino representative will contact you to confirm.</p>
-          <div style="text-align:center;margin-top:24px;">
-            <a href="/" class="btn btn-outline" data-link>Back to Home</a>
-          </div>
-        </div>
+          <button type="submit" class="btn btn-primary btn-full">Submit Request</button>
+        </form>
       </div>
     </div>
   `;
 }
 
-// Quote logic
-let quoteState = { service: '', rooms: '', addons: [] };
-
-function selectQuoteService(el, service) {
-  el.parentElement.querySelectorAll('.quote-service-option').forEach(o => o.classList.remove('selected'));
-  el.classList.add('selected');
-  quoteState.service = service;
+// Calculator logic
+function calcGetPricing() {
+  return CMS.pricing || { categories: [], hiddenFee: { label: 'Service Fee', amount: 0 } };
 }
 
-function selectQuoteRoom(el, rooms) {
-  el.parentElement.querySelectorAll('.quote-room-option').forEach(o => o.classList.remove('selected'));
-  el.classList.add('selected');
-  quoteState.rooms = rooms;
-}
+function calcChangeQty(key, delta) {
+  const state = window._calcState;
+  if (!state[key]) state[key] = { qty: 0, addons: {} };
+  state[key].qty = Math.max(0, state[key].qty + delta);
 
-function toggleAddon(el, addon) {
-  el.classList.toggle('selected');
-  if (quoteState.addons.includes(addon)) {
-    quoteState.addons = quoteState.addons.filter(a => a !== addon);
-  } else {
-    quoteState.addons.push(addon);
+  document.getElementById('calcQty_' + key).textContent = state[key].qty;
+  const addonsEl = document.getElementById('calcAddons_' + key);
+  if (addonsEl) addonsEl.style.display = state[key].qty > 0 ? 'flex' : 'none';
+  if (state[key].qty === 0) {
+    state[key].addons = {};
+    addonsEl?.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = false);
   }
+  calcUpdateSummary();
 }
 
-function quoteNext(step) {
-  for (let i = 1; i <= 4; i++) {
-    const el = document.getElementById(`quoteStep${i}`);
-    if (el) el.style.display = i <= step ? 'block' : 'none';
-  }
-  const stepEl = document.getElementById(`quoteStep${step}`);
-  if (stepEl) stepEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+function calcToggleAddon(key, addonIdx) {
+  const state = window._calcState;
+  if (!state[key]) return;
+  state[key].addons[addonIdx] = !state[key].addons[addonIdx];
+  calcUpdateSummary();
 }
 
-async function submitQuote() {
-  const data = {
-    zip: document.getElementById('quoteZip')?.value,
-    service: quoteState.service,
-    rooms: quoteState.rooms,
-    addons: quoteState.addons,
-    name: document.getElementById('quoteName')?.value,
-    email: document.getElementById('quoteEmail')?.value,
-    phone: document.getElementById('quotePhone')?.value,
-    date: document.getElementById('quoteDate')?.value,
-    time: document.getElementById('quoteTime')?.value,
-  };
+function calcUpdateSummary() {
+  const pricing = calcGetPricing();
+  const state = window._calcState;
+  let lines = '';
+  let total = 0;
+  let hasItems = false;
 
-  try {
-    await fetch('/api/quote', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+  pricing.categories.forEach((cat, ci) => {
+    cat.items.forEach((item, ii) => {
+      const key = ci + '_' + ii;
+      const s = state[key];
+      if (!s || s.qty === 0) return;
+      hasItems = true;
+      const lineTotal = item.price * s.qty;
+      total += lineTotal;
+      lines += `<div class="calc-summary-line"><span>${item.name} x${s.qty}</span><span>$${lineTotal}</span></div>`;
+      (item.addons || []).forEach((addon, ai) => {
+        if (s.addons[ai]) {
+          const addonTotal = addon.price * s.qty;
+          total += addonTotal;
+          lines += `<div class="calc-summary-line calc-summary-addon"><span>&nbsp;&nbsp;+ ${addon.name} x${s.qty}</span><span>$${addonTotal}</span></div>`;
+        }
+      });
     });
-  } catch (e) { /* ignore */ }
-
-  // Show summary
-  const basePrices = { 'Carpet Cleaning': 89, 'Upholstery Cleaning': 129, 'Tile & Grout': 149, 'Hardwood Floors': 119, 'Area Rug Cleaning': 99, 'Natural Stone': 159, 'Car/Boat/RV': 99, 'Water Damage': 299 };
-  const roomMultiplier = { '1': 1, '2': 1.7, '3': 2.3, '4': 2.9, '5': 3.4, '6+': 4 };
-  const addonPrices = { 'Carpet Protector': 49, 'Deodorizer': 29, 'Pet Treatment': 39, 'Stain Removal': 49 };
-
-  const base = basePrices[data.service] || 99;
-  const mult = roomMultiplier[data.rooms] || 1;
-  const serviceTotal = Math.round(base * mult);
-  let addonsTotal = 0;
-
-  let lines = `<div class="quote-summary-line"><span>${data.service} (${data.rooms || '1'} room${data.rooms === '1' ? '' : 's'})</span><span>$${serviceTotal}</span></div>`;
-  data.addons.forEach(a => {
-    const price = addonPrices[a] || 29;
-    addonsTotal += price;
-    lines += `<div class="quote-summary-line"><span>${a}</span><span>$${price}</span></div>`;
   });
 
-  document.getElementById('quoteSummaryLines').innerHTML = lines;
-  document.getElementById('quoteTotalPrice').textContent = `$${serviceTotal + addonsTotal}`;
+  const fee = pricing.hiddenFee?.amount || 0;
+  if (fee > 0) total += fee;
 
-  // Hide steps, show summary
-  for (let i = 1; i <= 4; i++) {
-    const el = document.getElementById(`quoteStep${i}`);
-    if (el) el.style.display = 'none';
-  }
-  document.getElementById('quoteSummary').style.display = 'block';
-  document.getElementById('quoteSummary').scrollIntoView({ behavior: 'smooth' });
+  document.getElementById('calcSummaryLines').innerHTML = hasItems ? lines : '<div class="calc-summary-empty">Add items to see your quote</div>';
+  document.getElementById('calcTotal').textContent = '$' + total;
+}
+
+function calcSchedule() {
+  const state = window._calcState;
+  const hasItems = Object.values(state).some(s => s.qty > 0);
+  if (!hasItems) { alert('Please add at least one item.'); return; }
+  document.getElementById('calcModal').style.display = 'flex';
+}
+
+async function calcSubmit(e) {
+  e.preventDefault();
+  const pricing = calcGetPricing();
+  const state = window._calcState;
+  const items = [];
+  pricing.categories.forEach((cat, ci) => {
+    cat.items.forEach((item, ii) => {
+      const key = ci + '_' + ii;
+      const s = state[key];
+      if (!s || s.qty === 0) return;
+      const selectedAddons = (item.addons || []).filter((_, ai) => s.addons[ai]).map(a => a.name);
+      items.push({ name: item.name, qty: s.qty, price: item.price, addons: selectedAddons });
+    });
+  });
+  const data = {
+    name: document.getElementById('calcName').value,
+    email: document.getElementById('calcEmail').value,
+    phone: document.getElementById('calcPhone').value,
+    zip: document.getElementById('calcZip').value,
+    date: document.getElementById('calcDate').value,
+    time: document.getElementById('calcTime').value,
+    items,
+    total: document.getElementById('calcTotal').textContent,
+  };
+  try {
+    await fetch('/api/quote', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+  } catch (e) { /* ignore */ }
+  document.getElementById('calcModal').querySelector('.calc-modal-content').innerHTML = `
+    <h2 style="color:var(--green);">Request Submitted!</h2>
+    <p>We'll contact you shortly to confirm your cleaning appointment.</p>
+    <a href="/" class="btn btn-primary" data-link style="margin-top:16px;">Back to Home</a>`;
+  bindLinks();
 }
 
 function handleZipQuote(e) {
@@ -855,96 +871,172 @@ async function handleNewsletter(e) {
 
 // ---- CMS Admin Page ----
 function renderAdmin() {
+  const pricing = CMS.pricing || { hiddenFee: { label: 'Service Fee', amount: 0 }, categories: [] };
+
   document.getElementById('app').innerHTML = `
-    <section class="page-content">
-      <div class="container">
-        <h1>Content Management</h1>
-        <p style="margin-bottom:24px;">Edit your website content below. Changes save automatically.</p>
-        <div id="cmsEditor"></div>
+    <div class="admin-page">
+      <div class="admin-topbar">
+        <div class="admin-topbar-left">
+          <a href="/quote" data-link class="btn btn-sm btn-outline">View Quote Page</a>
+          <h1>Pricing Admin</h1>
+        </div>
+        <div class="admin-topbar-right">
+          <button class="btn btn-sm btn-outline-dark" onclick="adminExport()">Export Config</button>
+          <label class="btn btn-sm btn-outline-dark" style="cursor:pointer;">Import Config<input type="file" accept=".json" style="display:none;" onchange="adminImport(event)"></label>
+          <button class="btn btn-primary btn-sm" onclick="adminSave()">Save All Changes</button>
+        </div>
       </div>
-    </section>
+
+      <!-- Hidden Fee -->
+      <div class="admin-section">
+        <h2>Hidden Fee (not visible to customer)</h2>
+        <div class="admin-fee-row">
+          <label>Label: <input type="text" id="adminFeeLabel" value="${(pricing.hiddenFee?.label || '').replace(/"/g, '&quot;')}"></label>
+          <label>Amount ($): <input type="number" id="adminFeeAmount" value="${pricing.hiddenFee?.amount || 0}" min="0" step="0.01"></label>
+        </div>
+      </div>
+
+      <!-- Categories -->
+      <div id="adminCategories"></div>
+
+      <button class="btn btn-secondary" onclick="adminAddCategory()" style="margin:24px 0 40px;">+ Add New Category</button>
+    </div>
   `;
-  buildCMSEditor();
+
+  adminRenderCategories();
 }
 
-function buildCMSEditor() {
-  const editor = document.getElementById('cmsEditor');
-  const pages = Object.keys(CMS);
+function adminRenderCategories() {
+  const pricing = CMS.pricing || { categories: [] };
+  const container = document.getElementById('adminCategories');
+  if (!container) return;
 
-  let html = '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;">';
-  pages.forEach(page => {
-    html += `<button class="btn btn-sm btn-outline-dark cms-page-btn" onclick="showCMSPage('${page}')" data-cms-page="${page}">${page.charAt(0).toUpperCase() + page.slice(1)}</button>`;
-  });
-  html += '</div><div id="cmsPageEditor"></div>';
-  editor.innerHTML = html;
-
-  // Show first page
-  if (pages.length > 0) showCMSPage(pages[0]);
+  container.innerHTML = pricing.categories.map((cat, ci) => `
+    <div class="admin-section admin-category" data-ci="${ci}">
+      <div class="admin-category-header">
+        <input type="text" class="admin-category-name" value="${cat.name.replace(/"/g, '&quot;')}" onchange="adminUpdateCatName(${ci}, this.value)">
+        <button class="btn btn-sm" style="color:var(--red);border:1px solid var(--red);background:none;" onclick="adminDeleteCategory(${ci})">Delete Category</button>
+      </div>
+      <table class="admin-items-table">
+        <thead>
+          <tr><th>Name</th><th>Description</th><th>Price</th><th>Unit</th><th></th></tr>
+        </thead>
+        <tbody>
+          ${cat.items.map((item, ii) => `
+            <tr>
+              <td><input type="text" value="${item.name.replace(/"/g, '&quot;')}" onchange="adminUpdateItem(${ci},${ii},'name',this.value)"></td>
+              <td><input type="text" value="${item.description.replace(/"/g, '&quot;')}" onchange="adminUpdateItem(${ci},${ii},'description',this.value)"></td>
+              <td><input type="number" value="${item.price}" min="0" step="0.01" onchange="adminUpdateItem(${ci},${ii},'price',parseFloat(this.value)||0)"></td>
+              <td><input type="text" value="${item.unit}" onchange="adminUpdateItem(${ci},${ii},'unit',this.value)"></td>
+              <td><button class="btn btn-sm" style="color:var(--red);" onclick="adminDeleteItem(${ci},${ii})">X</button></td>
+            </tr>
+            <tr class="admin-item-expandable">
+              <td colspan="5">
+                <details>
+                  <summary>Add-ons & Instructions</summary>
+                  <div class="admin-addons-section">
+                    <div class="admin-addons-list" id="adminAddons_${ci}_${ii}">
+                      ${(item.addons || []).map((addon, ai) => `
+                        <div class="admin-addon-row">
+                          <input type="text" value="${addon.name.replace(/"/g, '&quot;')}" placeholder="Add-on name" onchange="adminUpdateAddon(${ci},${ii},${ai},'name',this.value)">
+                          <input type="number" value="${addon.price}" min="0" step="0.01" placeholder="Price" onchange="adminUpdateAddon(${ci},${ii},${ai},'price',parseFloat(this.value)||0)">
+                          <button class="btn btn-sm" style="color:var(--red);" onclick="adminDeleteAddon(${ci},${ii},${ai})">X</button>
+                        </div>
+                      `).join('')}
+                    </div>
+                    <button class="btn btn-sm btn-outline-dark" onclick="adminAddAddon(${ci},${ii})">+ Add Add-on</button>
+                    <label style="display:block;margin-top:12px;font-weight:600;font-size:0.85rem;">Instructions</label>
+                    <textarea onchange="adminUpdateItem(${ci},${ii},'instructions',this.value)" placeholder="Special instructions for this item...">${item.instructions || ''}</textarea>
+                  </div>
+                </details>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      <button class="btn btn-sm btn-outline-dark" onclick="adminAddItem(${ci})" style="margin-top:12px;">+ Add Item</button>
+    </div>
+  `).join('');
 }
 
-function showCMSPage(page) {
-  document.querySelectorAll('.cms-page-btn').forEach(b => {
-    b.classList.toggle('btn-secondary', b.dataset.cmsPage === page);
-    b.classList.toggle('btn-outline-dark', b.dataset.cmsPage !== page);
-  });
-  const container = document.getElementById('cmsPageEditor');
-  const data = CMS[page];
-  container.innerHTML = renderCMSFields(data, page, page);
+function adminUpdateCatName(ci, val) {
+  CMS.pricing.categories[ci].name = val;
 }
 
-function renderCMSFields(obj, path, rootPage) {
-  if (!obj || typeof obj !== 'object') return '';
-  let html = '';
+function adminUpdateItem(ci, ii, field, val) {
+  CMS.pricing.categories[ci].items[ii][field] = val;
+}
 
-  if (Array.isArray(obj)) {
-    obj.forEach((item, i) => {
-      const itemPath = `${path}[${i}]`;
-      html += `<div style="border-left:3px solid var(--primary-light);padding-left:16px;margin:12px 0;">`;
-      html += `<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:4px;">Item ${i + 1}</div>`;
-      if (typeof item === 'object') {
-        html += renderCMSFields(item, itemPath, rootPage);
-      } else {
-        html += `<input type="text" value="${String(item).replace(/"/g, '&quot;')}" onchange="updateCMSField('${rootPage}', '${path}', ${i}, this.value)" style="width:100%;padding:8px 12px;border:1px solid var(--gray);border-radius:4px;margin-bottom:4px;">`;
-      }
-      html += '</div>';
-    });
-    return html;
-  }
+function adminUpdateAddon(ci, ii, ai, field, val) {
+  CMS.pricing.categories[ci].items[ii].addons[ai][field] = val;
+}
 
-  Object.entries(obj).forEach(([key, value]) => {
-    const fieldPath = `${path}.${key}`;
-    if (typeof value === 'string') {
-      const isLong = value.length > 100;
-      html += `<div style="margin-bottom:16px;">
-        <label style="display:block;font-weight:600;font-size:0.85rem;color:var(--dark);margin-bottom:4px;">${key}</label>
-        ${isLong
-          ? `<textarea style="width:100%;padding:10px 12px;border:2px solid var(--gray);border-radius:6px;min-height:80px;font-family:inherit;" onchange="updateCMSField('${rootPage}', '${fieldPath}', null, this.value)">${value}</textarea>`
-          : `<input type="text" value="${value.replace(/"/g, '&quot;')}" style="width:100%;padding:10px 12px;border:2px solid var(--gray);border-radius:6px;" onchange="updateCMSField('${rootPage}', '${fieldPath}', null, this.value)">`
-        }
-      </div>`;
-    } else if (typeof value === 'object' && value !== null) {
-      html += `<details style="margin-bottom:12px;border:1px solid var(--gray);border-radius:6px;padding:12px;" ${path === rootPage ? 'open' : ''}>
-        <summary style="cursor:pointer;font-weight:700;font-size:0.95rem;color:var(--primary-dark);">${key}</summary>
-        <div style="margin-top:12px;">${renderCMSFields(value, fieldPath, rootPage)}</div>
-      </details>`;
+function adminDeleteCategory(ci) {
+  if (!confirm('Delete this category and all its items?')) return;
+  CMS.pricing.categories.splice(ci, 1);
+  adminRenderCategories();
+}
+
+function adminDeleteItem(ci, ii) {
+  CMS.pricing.categories[ci].items.splice(ii, 1);
+  adminRenderCategories();
+}
+
+function adminDeleteAddon(ci, ii, ai) {
+  CMS.pricing.categories[ci].items[ii].addons.splice(ai, 1);
+  adminRenderCategories();
+}
+
+function adminAddCategory() {
+  if (!CMS.pricing) CMS.pricing = { hiddenFee: { label: 'Service Fee', amount: 0 }, categories: [] };
+  CMS.pricing.categories.push({ name: 'New Category', items: [] });
+  adminRenderCategories();
+}
+
+function adminAddItem(ci) {
+  CMS.pricing.categories[ci].items.push({ name: 'New Item', description: '', price: 0, unit: 'each', addons: [], instructions: '' });
+  adminRenderCategories();
+}
+
+function adminAddAddon(ci, ii) {
+  CMS.pricing.categories[ci].items[ii].addons.push({ name: '', price: 0 });
+  adminRenderCategories();
+}
+
+async function adminSave() {
+  // Gather hidden fee from inputs
+  CMS.pricing.hiddenFee = {
+    label: document.getElementById('adminFeeLabel')?.value || 'Service Fee',
+    amount: parseFloat(document.getElementById('adminFeeAmount')?.value) || 0
+  };
+  await saveCMS('pricing', CMS.pricing);
+  alert('Pricing saved successfully!');
+}
+
+function adminExport() {
+  const blob = new Blob([JSON.stringify(CMS.pricing, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'pricing-config.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function adminImport(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async function(ev) {
+    try {
+      const imported = JSON.parse(ev.target.result);
+      CMS.pricing = imported;
+      await saveCMS('pricing', CMS.pricing);
+      renderAdmin();
+    } catch (err) {
+      alert('Invalid JSON file.');
     }
-  });
-
-  return html;
-}
-
-function updateCMSField(rootPage, path, index, value) {
-  // Navigate to the nested field and update it
-  const parts = path.replace(rootPage + '.', '').split(/\.|\[|\]/).filter(Boolean);
-  let obj = CMS[rootPage];
-  for (let i = 0; i < parts.length - 1; i++) {
-    obj = obj[parts[i]];
-  }
-  const lastKey = index !== null ? index : parts[parts.length - 1];
-  obj[lastKey] = value;
-
-  // Save to server
-  saveCMS(rootPage, CMS[rootPage]);
+  };
+  reader.readAsText(file);
 }
 
 // ---- Interactions ----

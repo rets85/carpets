@@ -443,5 +443,128 @@
   "locations": {
     "title": "Find Your Shiny Rhino",
     "subtitle": "Enter the zip code where you need Shiny Rhino services. We'll connect you with your local team."
+  },
+  "pricing": {
+    "hiddenFee": { "label": "Service Fee", "amount": 0 },
+    "categories": [
+      {
+        "name": "Carpet Cleaning",
+        "items": [
+          {
+            "name": "Standard Room",
+            "description": "Up to 200 sq ft",
+            "price": 45,
+            "unit": "room",
+            "addons": [
+              { "name": "Protectant", "price": 30 },
+              { "name": "Deodorizer", "price": 25 }
+            ],
+            "instructions": ""
+          },
+          {
+            "name": "Large Room",
+            "description": "200-400 sq ft",
+            "price": 65,
+            "unit": "room",
+            "addons": [
+              { "name": "Protectant", "price": 40 },
+              { "name": "Deodorizer", "price": 25 }
+            ],
+            "instructions": ""
+          },
+          {
+            "name": "Hallway / Stairs",
+            "description": "Per flight or hallway",
+            "price": 35,
+            "unit": "area",
+            "addons": [
+              { "name": "Protectant", "price": 20 }
+            ],
+            "instructions": ""
+          },
+          {
+            "name": "Walk-in Closet",
+            "description": "Up to 80 sq ft",
+            "price": 25,
+            "unit": "closet",
+            "addons": [],
+            "instructions": ""
+          }
+        ]
+      },
+      {
+        "name": "Upholstery Cleaning",
+        "items": [
+          {
+            "name": "Sofa (3-seat)",
+            "description": "Standard 3-cushion sofa",
+            "price": 120,
+            "unit": "piece",
+            "addons": [
+              { "name": "Protectant", "price": 35 },
+              { "name": "Deodorizer", "price": 25 }
+            ],
+            "instructions": ""
+          },
+          {
+            "name": "Loveseat",
+            "description": "2-cushion loveseat",
+            "price": 90,
+            "unit": "piece",
+            "addons": [
+              { "name": "Protectant", "price": 30 }
+            ],
+            "instructions": ""
+          },
+          {
+            "name": "Accent Chair",
+            "description": "Single chair or recliner",
+            "price": 60,
+            "unit": "piece",
+            "addons": [
+              { "name": "Protectant", "price": 20 }
+            ],
+            "instructions": ""
+          },
+          {
+            "name": "Dining Chair",
+            "description": "Per chair",
+            "price": 25,
+            "unit": "chair",
+            "addons": [],
+            "instructions": ""
+          }
+        ]
+      },
+      {
+        "name": "Add-On Treatments",
+        "items": [
+          {
+            "name": "Pet Odor Treatment",
+            "description": "Enzyme-based deep treatment",
+            "price": 75,
+            "unit": "area",
+            "addons": [],
+            "instructions": "Applied per affected area. Technician will assess on-site."
+          },
+          {
+            "name": "Spot & Stain Removal",
+            "description": "Targeted stain treatment",
+            "price": 40,
+            "unit": "spot",
+            "addons": [],
+            "instructions": "Price per stain. Multiple stains may be discounted."
+          },
+          {
+            "name": "Scotchgard Protection",
+            "description": "Whole-room fabric protector",
+            "price": 50,
+            "unit": "room",
+            "addons": [],
+            "instructions": ""
+          }
+        ]
+      }
+    ]
   }
 }
