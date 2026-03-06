@@ -5,6 +5,31 @@
 let CMS = {};
 let cmsEditMode = false;
 
+// SVG Icons (no emojis)
+const ICONS = {
+  carpet: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>',
+  upholstery: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 16V8a4 4 0 014-4h8a4 4 0 014 4v8"/><path d="M2 16h20v2a2 2 0 01-2 2H4a2 2 0 01-2-2v-2z"/><path d="M4 16V12a2 2 0 012-2h12a2 2 0 012 2v4"/></svg>',
+  tile: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/></svg>',
+  hardwood: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="5" rx="1"/><rect x="2" y="10" width="20" height="5" rx="1"/><rect x="2" y="16" width="20" height="5" rx="1"/><line x1="10" y1="4" x2="10" y2="9"/><line x1="14" y1="10" x2="14" y2="15"/><line x1="8" y1="16" x2="8" y2="21"/></svg>',
+  rug: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="1"/><path d="M3 8h18M3 16h18"/><path d="M6 5v-2M10 5v-2M14 5v-2M18 5v-2M6 19v2M10 19v2M14 19v2M18 19v2"/></svg>',
+  stone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>',
+  vehicle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 17h14M5 17a2 2 0 01-2-2V9a2 2 0 012-2h1l2-3h8l2 3h1a2 2 0 012 2v6a2 2 0 01-2 2"/><circle cx="7.5" cy="17" r="2"/><circle cx="16.5" cy="17" r="2"/></svg>',
+  water: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C12 2 5 10 5 14a7 7 0 0014 0c0-4-7-12-7-12z"/></svg>',
+  star: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>',
+  badge: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15l-3.5 2 .67-3.89L6 10.11l3.91-.57L12 6l2.09 3.54 3.91.57-2.83 2.76.67 3.89z"/><circle cx="12" cy="12" r="10"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>',
+  shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>',
+  phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>',
+  mail: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 4l-10 8L2 4"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+  pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>',
+  building: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="1"/><path d="M9 22V12h6v10"/><rect x="8" y="6" width="3" height="2"/><rect x="13" y="6" width="3" height="2"/><rect x="8" y="10" width="3" height="2"/><rect x="13" y="10" width="3" height="2"/></svg>',
+  article: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h10M7 11h10M7 15h6"/></svg>',
+  product: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>',
+  home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>',
+  briefcase: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>',
+};
+
 // Fetch CMS data on load
 async function loadCMS() {
   try {
@@ -129,14 +154,14 @@ function renderHome() {
   const blog = d.blog || {};
 
   const serviceList = [
-    { key: 'carpet', icon: '🧹', color: '' },
-    { key: 'upholstery', icon: '🛋️', color: '' },
-    { key: 'tile', icon: '🔲', color: '' },
-    { key: 'hardwood', icon: '🪵', color: '' },
-    { key: 'rug', icon: '🟫', color: '' },
-    { key: 'stone', icon: '🪨', color: '' },
-    { key: 'vehicle', icon: '🚗', color: '' },
-    { key: 'water', icon: '💧', color: '' },
+    { key: 'carpet' },
+    { key: 'upholstery' },
+    { key: 'tile' },
+    { key: 'hardwood' },
+    { key: 'rug' },
+    { key: 'stone' },
+    { key: 'vehicle' },
+    { key: 'water' },
   ];
 
   document.getElementById('app').innerHTML = `
@@ -156,12 +181,26 @@ function renderHome() {
     <section class="quote-calculator">
       <div class="container quote-calc-inner">
         <h2>${(d.quoteCalc || {}).title || 'Get Your Instant Quote'}</h2>
-        <div class="quote-tabs">
-          <button class="quote-tab active">${(d.quoteCalc || {}).tabHome || 'For Home'}</button>
-          <button class="quote-tab">${(d.quoteCalc || {}).tabBusiness || 'For Business'}</button>
+        <div class="quote-type-cards">
+          <a href="/quote" class="quote-type-card" data-link>
+            <div class="quote-type-icon">${ICONS.home}</div>
+            <div class="quote-type-text">
+              <strong>Home Cleaning</strong>
+              <span>Residential carpet, upholstery & floor cleaning</span>
+            </div>
+            <div class="quote-type-arrow">&rarr;</div>
+          </a>
+          <a href="/quote?type=commercial" class="quote-type-card quote-type-card--biz" data-link>
+            <div class="quote-type-icon">${ICONS.briefcase}</div>
+            <div class="quote-type-text">
+              <strong>Business Cleaning</strong>
+              <span>Commercial & office cleaning programs</span>
+            </div>
+            <div class="quote-type-arrow">&rarr;</div>
+          </a>
         </div>
         <form class="zip-quote-form" onsubmit="handleZipQuote(event)">
-          <input type="text" placeholder="Enter ZIP Code for cleaning services" required>
+          <input type="text" placeholder="Or enter your ZIP Code to get started" required>
           <button type="submit" class="btn btn-primary">Get Quote</button>
         </form>
       </div>
@@ -179,7 +218,7 @@ function renderHome() {
             <a href="/services/${s.key}" class="service-tile" data-link>
               <div class="service-tile-bg"></div>
               <div class="service-tile-content">
-                <div class="service-tile-icon">${s.icon}</div>
+                <div class="service-tile-icon">${ICONS[s.key] || ''}</div>
                 <h3>${svc.title || s.key}</h3>
               </div>
             </a>`;
@@ -203,7 +242,7 @@ function renderHome() {
             <p style="margin-bottom:24px;color:var(--text-light);line-height:1.7;">${trust.description || ''}</p>
             ${(trust.items || []).map(item => `
               <div class="trust-item">
-                <div class="trust-icon">${item.icon === 'star' ? '★' : item.icon === 'badge' ? '✓' : item.icon === 'check' ? '⚙' : '🛡'}</div>
+                <div class="trust-icon">${ICONS[item.icon] || ICONS.check}</div>
                 <div>
                   <h3>${item.title}</h3>
                   <p>${item.description}</p>
@@ -263,7 +302,7 @@ function renderHome() {
         <div class="blog-grid">
           ${(blog.posts || []).map(post => `
             <div class="blog-card">
-              <div class="blog-card-image"><span>📰</span></div>
+              <div class="blog-card-image">${ICONS.article}</div>
               <div class="blog-card-body">
                 <div class="blog-card-category">${post.category || ''}</div>
                 <h3>${post.title}</h3>
@@ -537,7 +576,7 @@ function renderService(key) {
         <div class="service-features">
           ${(svc.features || []).map(f => `
             <div class="service-feature">
-              <div class="service-feature-icon">✓</div>
+              <div class="service-feature-icon">${ICONS.check}</div>
               <div>
                 <h3>${f.title}</h3>
                 <p>${f.description}</p>
@@ -573,7 +612,7 @@ function renderService(key) {
             <p>${svc.commercial.description}</p>
             <a href="/quote?type=commercial" class="btn btn-primary" data-link>Get Commercial Quote</a>
           </div>
-          <div class="commercial-image"><span>🏢</span></div>
+          <div class="commercial-image">${ICONS.building}</div>
         </div>
       </div>
     </section>` : ''}
@@ -612,7 +651,7 @@ function renderProducts() {
           <div class="products-grid" style="grid-template-columns:repeat(2,1fr);">
             ${(d.items || []).map((item, i) => `
               <div class="product-card">
-                <div class="product-image"><span>🧴</span></div>
+                <div class="product-image">${ICONS.product}</div>
                 <div class="product-body">
                   <h3>${item.name}</h3>
                   <p>${item.description}</p>
@@ -656,7 +695,7 @@ function renderAbout() {
         </div>
         ${(d.sections || []).map((sec, i) => `
           <div class="about-grid" id="${sec.title.includes('Technician') ? 'technicians' : sec.title.includes('Eco') ? 'eco' : ''}">
-            <div class="about-image"><span>${i === 0 ? '🎯' : i === 1 ? '👨‍🔧' : i === 2 ? '🇺🇸' : '🌿'}</span></div>
+            <div class="about-image">${i === 0 ? ICONS.star : i === 1 ? ICONS.badge : i === 2 ? ICONS.shield : ICONS.check}</div>
             <div class="about-text">
               <h2>${sec.title}</h2>
               <p>${sec.text}</p>
@@ -695,7 +734,7 @@ function renderBlog() {
           <div class="blog-grid" style="margin-top:16px;">
             ${cat.posts.map(post => `
               <div class="blog-card">
-                <div class="blog-card-image"><span>📰</span></div>
+                <div class="blog-card-image">${ICONS.article}</div>
                 <div class="blog-card-body">
                   <div class="blog-card-category">${cat.name}</div>
                   <h3>${post.title}</h3>
@@ -815,19 +854,19 @@ function renderContact() {
             <div class="contact-info-card">
               <h3>Get in Touch</h3>
               <div class="contact-info-item">
-                <div class="contact-info-icon">📞</div>
+                <div class="contact-info-icon">${ICONS.phone}</div>
                 <div><h4>Phone</h4><p>${(d.info || {}).phone || '1-800-555-RHINO'}</p></div>
               </div>
               <div class="contact-info-item">
-                <div class="contact-info-icon">✉️</div>
+                <div class="contact-info-icon">${ICONS.mail}</div>
                 <div><h4>Email</h4><p>${(d.info || {}).email || 'info@shinyrhino.com'}</p></div>
               </div>
               <div class="contact-info-item">
-                <div class="contact-info-icon">🕐</div>
+                <div class="contact-info-icon">${ICONS.clock}</div>
                 <div><h4>Hours</h4><p>${(d.info || {}).hours || 'Mon-Fri: 7am-8pm'}</p></div>
               </div>
               <div class="contact-info-item">
-                <div class="contact-info-icon">📍</div>
+                <div class="contact-info-icon">${ICONS.pin}</div>
                 <div><h4>Emergency?</h4><p>For water damage emergencies, call us 24/7.</p></div>
               </div>
             </div>
