@@ -562,7 +562,9 @@ button { cursor: pointer; font-family: inherit; }
 @media (max-width: 768px) {
   .top-bar-actions { display: none; }
   .mobile-toggle { display: flex; }
-  .nav-links { display: none; position: absolute; top: 72px; left: 0; right: 0; background: var(--white); flex-direction: column; padding: 20px; box-shadow: var(--shadow-lg); gap: 4px; z-index: 999; }
+  .nav-inner { height: 65px; }
+  .logo img { height: 50px !important; width: auto !important; }
+  .nav-links { display: none; position: absolute; top: 65px; left: 0; right: 0; background: var(--white); flex-direction: column; padding: 20px; box-shadow: var(--shadow-lg); gap: 4px; z-index: 999; }
   .nav-links.active { display: flex; }
   .nav-links > li > a { display: block; padding: 12px 16px; }
   .mega-dropdown { position: static; min-width: 100%; transform: none; box-shadow: none; padding: 8px 0 8px 20px; }
@@ -591,6 +593,24 @@ button { cursor: pointer; font-family: inherit; }
   .zip-quote-form { flex-direction: column; }
   .newsletter-form { flex-direction: column; }
   .newsletter-form input { min-width: auto; }
+
+  /* Trust section - shrink logo, tighten layout */
+  .trust-section { padding: 40px 0; }
+  .trust-layout { gap: 24px; }
+  .trust-image { height: auto; max-height: 160px; }
+  .trust-image img { max-height: 120px; }
+  .trust-icon { width: 44px; height: 44px; }
+  .trust-icon svg { width: 20px; height: 20px; }
+  .trust-item { gap: 14px; margin-bottom: 20px; }
+  .trust-item h3 { font-size: 0.95rem; }
+  .trust-item p { font-size: 0.85rem; }
+
+  /* Stats bar */
+  .stat-number { font-size: 2rem; }
+
+  /* Schedule CTA */
+  .schedule-inner { text-align: center; }
+  .schedule-text h2 { font-size: 1.5rem; }
 
   .footer-grid { grid-template-columns: 1fr; gap: 32px; }
   .footer-bottom { flex-direction: column; gap: 12px; text-align: center; }
