@@ -11,10 +11,10 @@ Single-page application (SPA) for a carpet cleaning business with server-side re
 
 ## Deployment
 - **Hosting**: Railway
-- **Live URL**: https://shiny-rhino-production.up.railway.app
+- **Live URL**: https://myshinyrhino.com
 - **Railway project**: shiny-rhino (linked via `railway link`)
 - **Deploy command**: `railway up --detach` from project root
-- **Env vars on Railway**: `BASE_URL=https://shiny-rhino-production.up.railway.app`
+- **Env vars on Railway**: `BASE_URL=https://myshinyrhino.com`
 - **GitHub**: https://github.com/rets85/carpets.git (branch: master)
 
 ## Key Architecture

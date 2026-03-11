@@ -7,9 +7,42 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 const DATA_FILE = path.join(__dirname, 'cms-data.json');
+const CRM_WEBHOOK = 'https://crm.firstmanventures.com/api/webhooks/leads/rhino';
+const CUSTOM_WEBHOOK = process.env.LEAD_WEBHOOK_URL || 'https://hook.eu2.make.com/qpjh4zn8zvjslc2kog3yu17ctv9shw9g';
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public'), { index: false }));
+
+// Forward leads to CRM and optional custom webhook
+async function forwardLead(data) {
+  const payload = {
+    name: data.name || data.firstName ? `${data.firstName || ''} ${data.lastName || ''}`.trim() : 'Website Lead',
+    email: data.email || '',
+    phone: data.phone || '',
+    address: data.address || '',
+    city: data.city || '',
+    state: data.state || '',
+    zip: data.zip || '',
+    source: 'Website',
+    notes: data.notes || data.message || '',
+    message: data.message || ''
+  };
+
+  const targets = [CRM_WEBHOOK];
+  if (CUSTOM_WEBHOOK) targets.push(CUSTOM_WEBHOOK);
+
+  for (const url of targets) {
+    try {
+      await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    } catch (err) {
+      console.error(`Webhook failed (${url}):`, err.message);
+    }
+  }
+}
 
 // Load CMS data
 function loadData() {
@@ -32,7 +65,7 @@ function renderSSRPage(reqPath) {
   const CMS = loadData();
   const template = getTemplate();
   const meta = renderMetaTags(reqPath, CMS, BASE_URL);
-  const structuredData = renderStructuredData(CMS);
+  const structuredData = renderStructuredData(reqPath, CMS, BASE_URL);
   const pageContent = renderPage(reqPath, CMS);
 
   let html = template;
@@ -93,6 +126,7 @@ app.post('/api/quote', (req, res) => {
   }
   quotes.push({ ...req.body, timestamp: new Date().toISOString() });
   fs.writeFileSync(quotesFile, JSON.stringify(quotes, null, 2));
+  forwardLead(req.body);
   res.json({ success: true, message: 'Quote request received!' });
 });
 
@@ -104,6 +138,7 @@ app.post('/api/contact', (req, res) => {
   }
   contacts.push({ ...req.body, timestamp: new Date().toISOString() });
   fs.writeFileSync(contactFile, JSON.stringify(contacts, null, 2));
+  forwardLead(req.body);
   res.json({ success: true, message: 'Message received!' });
 });
 

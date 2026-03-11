@@ -243,6 +243,21 @@ function renderFAQBlock(questions) {
     </div>`).join('')}</div>`;
 }
 
+const BLOG_IMAGES = {
+  'how-to-remove-carpet-stains': 'https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?w=400&h=300&fit=crop',
+  'how-often-professional-carpet-cleaning': 'https://images.unsplash.com/photo-1576523163790-18a073e1fb7e?w=400&h=300&fit=crop',
+  'steam-cleaning-vs-dry-cleaning-carpet': 'https://images.unsplash.com/photo-1758273238947-7eb530b408e4?w=400&h=300&fit=crop',
+  'get-rid-of-pet-odor-carpet': 'https://images.unsplash.com/photo-1481391032119-d89fee407e44?w=400&h=300&fit=crop',
+  'complete-guide-cleaning-tile-grout': 'https://images.unsplash.com/photo-1721564130772-c9ee561ab87b?w=400&h=300&fit=crop',
+  'hidden-spots-deep-cleaning': 'https://images.unsplash.com/photo-1627037118196-2a3c22a22eea?w=400&h=300&fit=crop',
+  'year-round-deep-clean-schedule': 'https://images.unsplash.com/photo-1504115744733-85e946e6c323?w=400&h=300&fit=crop',
+  'rental-vs-professional-carpet-cleaning': 'https://images.unsplash.com/photo-1758523670634-df4e12ed7a26?w=400&h=300&fit=crop',
+  'dirty-upholstery-air-quality': 'https://images.unsplash.com/photo-1519494140681-8b17d830a3e9?w=400&h=300&fit=crop',
+  'daily-habits-carpet-care': 'https://images.unsplash.com/photo-1550514704-b5f6163b466a?w=400&h=300&fit=crop',
+  'pet-owners-guide-clean-floors': 'https://images.unsplash.com/photo-1722604828977-395d52c3cd23?w=400&h=300&fit=crop',
+  'spring-carpet-deep-clean': 'https://images.unsplash.com/photo-1444012236767-1b471c68781c?w=400&h=300&fit=crop'
+};
+
 // ---- Page Renderers ----
 
 function renderHome() {
@@ -254,14 +269,14 @@ function renderHome() {
   const blog = d.blog || {};
 
   const serviceList = [
-    { key: 'carpet', img: 'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=400&h=300&fit=crop' },
-    { key: 'upholstery', img: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&h=300&fit=crop' },
-    { key: 'tile', img: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=400&h=300&fit=crop' },
-    { key: 'hardwood', img: 'https://images.unsplash.com/photo-1622398925373-3f91b1e275f5?w=400&h=300&fit=crop' },
-    { key: 'rug', img: 'https://images.unsplash.com/photo-1600166898405-da9535204843?w=400&h=300&fit=crop' },
-    { key: 'stone', img: 'https://images.unsplash.com/photo-1615971677499-5467cbab01c0?w=400&h=300&fit=crop' },
-    { key: 'vehicle', img: 'https://images.unsplash.com/photo-1489824904134-891ab64532f1?w=400&h=300&fit=crop' },
-    { key: 'water', img: 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400&h=300&fit=crop' },
+    { key: 'carpet', img: 'https://images.unsplash.com/photo-1576523163790-18a073e1fb7e?w=400&h=300&fit=crop' },
+    { key: 'upholstery', img: 'https://images.unsplash.com/photo-1519494140681-8b17d830a3e9?w=400&h=300&fit=crop' },
+    { key: 'tile', img: 'https://images.unsplash.com/photo-1721564130772-c9ee561ab87b?w=400&h=300&fit=crop' },
+    { key: 'hardwood', img: 'https://images.unsplash.com/photo-1722604828977-395d52c3cd23?w=400&h=300&fit=crop' },
+    { key: 'rug', img: 'https://images.unsplash.com/photo-1695197943218-be1bb14b6894?w=400&h=300&fit=crop' },
+    { key: 'stone', img: 'https://images.unsplash.com/photo-1762246433202-6e2cff902b1e?w=400&h=300&fit=crop' },
+    { key: 'vehicle', img: 'https://images.unsplash.com/photo-1748569747438-b6b5f18a46b9?w=400&h=300&fit=crop' },
+    { key: 'water', img: 'https://images.unsplash.com/photo-1632098725022-17e8c2916574?w=400&h=300&fit=crop' },
   ];
 
   document.getElementById('app').innerHTML = `
@@ -272,7 +287,7 @@ function renderHome() {
         <p class="hero-sub">${hero.subtitle || ''}</p>
         <div class="hero-buttons">
           <a href="/quote" class="btn btn-primary btn-lg" data-link>${hero.ctaPrimary || 'Get a Quote'}</a>
-          <a href="tel:1-800-555-7446" class="btn btn-outline btn-lg">${hero.ctaSecondary || 'Call Us'}</a>
+          <a href="tel:4846301533" class="btn btn-outline btn-lg">${hero.ctaSecondary || 'Call Us'}</a>
         </div>
       </div>
     </section>
@@ -402,7 +417,7 @@ function renderHome() {
         <div class="blog-grid">
           ${((CMS.blog || {}).posts || []).filter(p => p.status === 'published').slice(0, 3).map(post => `
             <div class="blog-card">
-              <div class="blog-card-image">${ICONS.article}</div>
+              <img src="${BLOG_IMAGES[post.slug] || ''}" alt="${post.title}" class="blog-card-img" loading="lazy" width="400" height="300">
               <div class="blog-card-body">
                 <div class="blog-card-category">${post.category || ''}</div>
                 <h3><a href="/blog/${post.slug}" data-link>${post.title}</a></h3>
@@ -874,7 +889,7 @@ function renderBlog() {
         <div class="blog-list">
           ${posts.map(post => `
             <article class="blog-list-item" data-category="${post.category || ''}">
-              <div class="blog-list-image">${ICONS.article}</div>
+              <img src="${BLOG_IMAGES[post.slug] || ''}" alt="${post.title}" class="blog-card-img" loading="lazy" width="400" height="300" style="border-radius:8px;max-width:280px;height:auto;">
               <div class="blog-list-body">
                 <div class="blog-list-meta">
                   <span class="blog-list-category">${post.category || ''}</span>
@@ -983,7 +998,7 @@ function renderLocations() {
     <section class="page-content">
       <div class="container" style="text-align:center;">
         <h2>Serving Communities Nationwide</h2>
-        <p style="max-width:600px;margin:0 auto;">Shiny Rhino has locations across the country, ready to serve your home or business. Enter your zip code above or call <strong>1-800-555-RHINO</strong> to find your nearest location.</p>
+        <p style="max-width:600px;margin:0 auto;">Shiny Rhino has locations across the country, ready to serve your home or business. Enter your zip code above or call <strong>(484) 630-1533</strong> to find your nearest location.</p>
       </div>
     </section>
   `;
@@ -1036,7 +1051,7 @@ function renderContact() {
               <h3>Get in Touch</h3>
               <div class="contact-info-item">
                 <div class="contact-info-icon">${ICONS.phone}</div>
-                <div><h4>Phone</h4><p>${(d.info || {}).phone || '1-800-555-RHINO'}</p></div>
+                <div><h4>Phone</h4><p>${(d.info || {}).phone || '(484) 630-1533'}</p></div>
               </div>
               <div class="contact-info-item">
                 <div class="contact-info-icon">${ICONS.mail}</div>
