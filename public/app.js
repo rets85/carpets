@@ -479,7 +479,7 @@ function renderQuote(isCommercial) {
             <h2>Enter Your Zip Code</h2>
             <p>We'll show you accurate pricing for your area.</p>
             <form onsubmit="calcZipLookup(event, ${isCommercial})" class="zip-gate-form">
-              <input type="text" id="zipGateInput" placeholder="Enter 5-digit ZIP code" maxlength="5" pattern="\\d{5}" required autofocus>
+              <input type="text" id="zipGateInput" placeholder="ZIP Code" maxlength="5" pattern="\\d{5}" required autofocus>
               <button type="submit" class="btn btn-primary" id="zipGateBtn">Get Pricing</button>
             </form>
             <p id="zipGateError" class="zip-gate-error" style="display:none;"></p>
