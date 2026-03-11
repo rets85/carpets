@@ -1,0 +1,10 @@
+{
+  "users": [
+    {
+      "email": "eitan@lightwaydigital.com",
+      "passwordHash": "446a69f775f55d465f6d70b51aac455697fefb2ae2ee22985a27df7c1c9b0e08",
+      "role": "admin",
+      "name": "Eitan"
+    }
+  ]
+}
