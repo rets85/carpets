@@ -1,15 +1,43 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { renderMetaTags, renderStructuredData, renderPage, generateSitemap } = require('./ssr');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 const DATA_FILE = path.join(__dirname, 'cms-data.json');
+const USERS_FILE = path.join(__dirname, 'admin-users.json');
 const ZIP_RANGES = JSON.parse(fs.readFileSync(path.join(__dirname, 'zip-ranges.json'), 'utf-8'));
 const CRM_WEBHOOK = 'https://crm.firstmanventures.com/api/webhooks/leads/rhino';
 const CUSTOM_WEBHOOK = process.env.LEAD_WEBHOOK_URL || 'https://hook.eu2.make.com/qpjh4zn8zvjslc2kog3yu17ctv9shw9g';
+
+// --- Admin Auth ---
+const activeSessions = new Map(); // token -> { email, role, name, expires }
+
+function loadUsers() {
+  if (fs.existsSync(USERS_FILE)) {
+    return JSON.parse(fs.readFileSync(USERS_FILE, 'utf-8')).users || [];
+  }
+  return [];
+}
+
+function hashPassword(pw) {
+  return crypto.createHash('sha256').update(pw).digest('hex');
+}
+
+function requireAdmin(req, res, next) {
+  const token = req.headers['x-admin-token'];
+  if (!token) return res.status(401).json({ error: 'Not authenticated' });
+  const session = activeSessions.get(token);
+  if (!session || session.expires < Date.now()) {
+    activeSessions.delete(token);
+    return res.status(401).json({ error: 'Session expired' });
+  }
+  req.adminUser = session;
+  next();
+}
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public'), { index: false }));
@@ -86,6 +114,43 @@ function renderSSRPage(reqPath) {
   return html;
 }
 
+// --- Admin Auth Routes ---
+
+app.post('/api/admin/login', (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+  const users = loadUsers();
+  const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+  if (!user || user.passwordHash !== hashPassword(password)) {
+    return res.status(401).json({ error: 'Invalid email or password' });
+  }
+  const token = crypto.randomBytes(32).toString('hex');
+  activeSessions.set(token, {
+    email: user.email,
+    role: user.role,
+    name: user.name,
+    expires: Date.now() + 24 * 60 * 60 * 1000 // 24 hours
+  });
+  res.json({ token, user: { email: user.email, role: user.role, name: user.name } });
+});
+
+app.post('/api/admin/logout', (req, res) => {
+  const token = req.headers['x-admin-token'];
+  if (token) activeSessions.delete(token);
+  res.json({ success: true });
+});
+
+app.get('/api/admin/verify', (req, res) => {
+  const token = req.headers['x-admin-token'];
+  if (!token) return res.status(401).json({ error: 'No token' });
+  const session = activeSessions.get(token);
+  if (!session || session.expires < Date.now()) {
+    activeSessions.delete(token);
+    return res.status(401).json({ error: 'Session expired' });
+  }
+  res.json({ user: { email: session.email, role: session.role, name: session.name } });
+});
+
 // --- API Routes ---
 
 app.get('/api/content', (req, res) => {
@@ -102,7 +167,7 @@ app.get('/api/content/:page', (req, res) => {
   }
 });
 
-app.put('/api/content/:page', (req, res) => {
+app.put('/api/content/:page', requireAdmin, (req, res) => {
   const data = loadData();
   const page = req.params.page;
   data[page] = req.body;
@@ -110,7 +175,7 @@ app.put('/api/content/:page', (req, res) => {
   res.json({ success: true, data: data[page] });
 });
 
-app.patch('/api/content/:page', (req, res) => {
+app.patch('/api/content/:page', requireAdmin, (req, res) => {
   const data = loadData();
   const page = req.params.page;
   if (!data[page]) data[page] = {};

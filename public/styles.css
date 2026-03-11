@@ -497,6 +497,17 @@ button { cursor: pointer; font-family: inherit; }
 .adm-nav-icon { width: 20px; text-align: center; font-size: 0.95rem; }
 .adm-nav-icon svg { width: 16px; height: 16px; }
 .adm-sidebar-footer { padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.1); }
+.adm-user-info { margin-bottom: 12px; text-align: center; }
+.adm-user-name { display: block; color: var(--white); font-weight: 600; font-size: 0.9rem; }
+.adm-user-role { display: block; color: rgba(255,255,255,0.5); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; }
+.admin-login { display: flex; justify-content: center; align-items: center; min-height: 80vh; padding: 40px 20px; background: #f0f2f5; }
+.admin-login-card { background: var(--white); border-radius: var(--radius-lg, 12px); padding: 48px 40px; box-shadow: var(--shadow); max-width: 400px; width: 100%; }
+.admin-login-logo { text-align: center; margin-bottom: 16px; }
+.admin-login-card h2 { text-align: center; margin-bottom: 24px; color: var(--dark); }
+.admin-login-field { margin-bottom: 16px; }
+.admin-login-field label { display: block; font-weight: 600; margin-bottom: 4px; font-size: 0.9rem; color: var(--dark); }
+.admin-login-field input { width: 100%; padding: 10px 14px; border: 2px solid var(--gray-dark); border-radius: var(--radius); font-size: 1rem; font-family: inherit; box-sizing: border-box; }
+.admin-login-field input:focus { border-color: var(--primary); outline: none; }
 .adm-main { background: #f0f2f5; overflow-y: auto; }
 .adm-header { background: var(--white); padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--gray); position: sticky; top: 0; z-index: 10; }
 .adm-header h1 { font-size: 1.3rem; margin: 0; }

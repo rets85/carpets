@@ -56,13 +56,20 @@ async function loadCMS() {
   }
 }
 
+// Admin auth
+function getAdminToken() { return sessionStorage.getItem('adminToken'); }
+function setAdminToken(token) { sessionStorage.setItem('adminToken', token); }
+function clearAdminToken() { sessionStorage.removeItem('adminToken'); sessionStorage.removeItem('adminUser'); }
+function getAdminUser() { try { return JSON.parse(sessionStorage.getItem('adminUser')); } catch { return null; } }
+
 // Save CMS field
 async function saveCMS(page, data) {
-  await fetch(`/api/content/${page}`, {
+  const res = await fetch(`/api/content/${page}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'X-Admin-Token': getAdminToken() || '' },
     body: JSON.stringify(data)
   });
+  if (res.status === 401) { clearAdminToken(); renderAdmin(); return; }
 }
 
 // ---- Product Slug Helper ----
@@ -1339,8 +1346,88 @@ const ADMIN_PAGE_CONFIG = {
   }
 };
 
-function renderAdmin() {
+async function renderAdmin() {
+  // Check for existing session
+  const token = getAdminToken();
+  if (token) {
+    try {
+      const res = await fetch('/api/admin/verify', { headers: { 'X-Admin-Token': token } });
+      if (res.ok) {
+        const data = await res.json();
+        sessionStorage.setItem('adminUser', JSON.stringify(data.user));
+        return renderAdminDashboard();
+      }
+    } catch {}
+    clearAdminToken();
+  }
+  renderAdminLogin();
+}
+
+function renderAdminLogin() {
+  document.getElementById('app').innerHTML = `
+    <div class="admin-login">
+      <div class="admin-login-card">
+        <div class="admin-login-logo">
+          <img src="/logo.png" alt="Shiny Rhino" width="80" height="80" style="height:80px;width:auto;">
+        </div>
+        <h2>Admin Login</h2>
+        <form onsubmit="handleAdminLogin(event)">
+          <div class="admin-login-field">
+            <label for="adminEmail">Email</label>
+            <input type="email" id="adminEmail" required autofocus>
+          </div>
+          <div class="admin-login-field">
+            <label for="adminPassword">Password</label>
+            <input type="password" id="adminPassword" required>
+          </div>
+          <p id="adminLoginError" style="color:#c0392b;font-size:0.9rem;display:none;margin-bottom:12px;"></p>
+          <button type="submit" class="btn btn-primary" style="width:100%;" id="adminLoginBtn">Sign In</button>
+        </form>
+      </div>
+    </div>
+  `;
+}
+
+async function handleAdminLogin(e) {
+  e.preventDefault();
+  const email = document.getElementById('adminEmail').value;
+  const password = document.getElementById('adminPassword').value;
+  const btn = document.getElementById('adminLoginBtn');
+  const errEl = document.getElementById('adminLoginError');
+  btn.disabled = true; btn.textContent = 'Signing in...';
+  errEl.style.display = 'none';
+  try {
+    const res = await fetch('/api/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      errEl.textContent = data.error || 'Login failed';
+      errEl.style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Sign In';
+      return;
+    }
+    setAdminToken(data.token);
+    sessionStorage.setItem('adminUser', JSON.stringify(data.user));
+    renderAdminDashboard();
+  } catch {
+    errEl.textContent = 'Connection error. Try again.';
+    errEl.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Sign In';
+  }
+}
+
+function adminLogout() {
+  fetch('/api/admin/logout', { method: 'POST', headers: { 'X-Admin-Token': getAdminToken() || '' } });
+  clearAdminToken();
+  renderAdminLogin();
+}
+
+function renderAdminDashboard() {
   const pages = Object.keys(ADMIN_PAGE_CONFIG);
+  const user = getAdminUser();
 
   document.getElementById('app').innerHTML = `
     <div class="adm">
@@ -1371,6 +1458,11 @@ function renderAdmin() {
           `).join('')}
         </nav>
         <div class="adm-sidebar-footer">
+          <div class="adm-user-info">
+            <span class="adm-user-name">${user?.name || user?.email || 'Admin'}</span>
+            <span class="adm-user-role">${user?.role || 'admin'}</span>
+          </div>
+          <button onclick="adminLogout()" class="btn btn-sm btn-outline" style="width:100%;text-align:center;margin-bottom:8px;">Log Out</button>
           <a href="/" data-link class="btn btn-sm btn-outline" style="width:100%;text-align:center;">View Live Site</a>
         </div>
       </aside>
