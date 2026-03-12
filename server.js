@@ -335,7 +335,7 @@ function buildStateIndexPage(stateName, stateSlug, cities) {
 // Define explicit routes for SSR so each page gets proper meta + content
 
 const ssrRoutes = [
-  '/', '/quote', '/quote/commercial', '/products', '/about', '/blog', '/faq',
+  '/', '/quote', '/quote/commercial', '/checkout', '/products', '/about', '/blog', '/faq',
   '/locations', '/contact', '/sh-admin',
   '/services/carpet', '/services/upholstery', '/services/tile',
   '/services/hardwood', '/services/rug', '/services/stone',

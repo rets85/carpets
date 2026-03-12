@@ -71,6 +71,12 @@ function getMeta(path, CMS) {
       description: 'Get in touch with Shiny Rhino. Call (484) 630-1533, email us, or fill out our contact form. We respond within 24 hours.',
       ...base
     },
+    '/checkout': {
+      title: `Secure Checkout | ${company}`,
+      description: 'Complete your carpet cleaning booking. Review your order, enter your details, and schedule your appointment securely.',
+      noIndex: true,
+      ...base
+    },
     '/sh-admin': {
       title: `Admin Dashboard | ${company}`,
       description: 'Administration dashboard.',
@@ -412,6 +418,7 @@ function getBreadcrumbs(path, CMS, baseUrl) {
   const routeNames = {
     '/quote': 'Get a Quote',
     '/quote/commercial': 'Commercial Quote',
+    '/checkout': 'Checkout',
     '/products': 'Products',
     '/about': 'About Us',
     '/blog': 'Blog',
@@ -799,6 +806,14 @@ function ssrProductDetail(CMS, slug) {
     </div></section>`;
 }
 
+function ssrCheckout(CMS) {
+  return `
+    <section class="checkout-page"><div class="container">
+      <h1>Secure Checkout</h1>
+      <p>Review your order and complete your booking.</p>
+    </div></section>`;
+}
+
 function renderPage(path, CMS) {
   const serviceMatch = path.match(/^\/services\/(\w+)$/);
   if (serviceMatch) return ssrService(CMS, serviceMatch[1]);
@@ -813,6 +828,7 @@ function renderPage(path, CMS) {
     '/': ssrHome,
     '/quote': ssrQuote,
     '/quote/commercial': (cms) => ssrQuote(cms, true),
+    '/checkout': ssrCheckout,
     '/products': ssrProducts,
     '/about': ssrAbout,
     '/blog': ssrBlog,
