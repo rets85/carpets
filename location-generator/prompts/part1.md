@@ -10,7 +10,8 @@ Write PURE HTML content (no markdown, no code fences, no DOCTYPE/html/head/body 
 
 ### 2. H2: "Why {city} Homes Need Professional Carpet Cleaning"
 - 2 paragraphs about local climate, weather patterns, allergens, or environmental factors specific to {city}, {state} that affect carpet condition
-- Reference real geographic or climate features (humidity, dust, pollen seasons, snow/mud tracking, etc.)
+- Reference REAL geographic or climate features (humidity, dust, pollen seasons, snow/mud tracking, etc.)
+- Mention specific neighborhoods, districts, or landmarks in {city} if well-known
 
 ### 3. H2: "Our Cleaning Services in {city}"
 Write 4 service subsections, each with:
@@ -30,11 +31,18 @@ Write 4 service subsections, each with:
 4. **H3: Specialty Services** - Mention hardwood floors, area rugs, water damage, vehicle interiors
    Link: <a href="/services/water">water damage restoration</a>
 
+## Writing Style (CRITICAL for SEO):
+- Write in SHORT, self-contained paragraphs of 30-50 words each
+- Each paragraph should make ONE clear point that can stand alone as a quotable passage
+- Avoid walls of text over 100 words per paragraph
+- Use clear topic sentences that answer specific questions a searcher might ask
+- This format is critical for AI search engines (Google SGE, ChatGPT, Perplexity) which extract short passages to cite
+
 ## Rules:
 - Use {city} name 8-12 times naturally throughout the content
 - Write 800-1000 words total
 - Pure HTML only. No markdown. No code fences.
 - No em dashes or en dashes. Use regular hyphens only.
-- Content must be unique and specific to {city}, {state}
+- Content MUST be unique and specific to {city}, {state} - reference real local details
 - Do NOT include any schema markup in this section
 - Do NOT wrap output in ```html``` or any code blocks

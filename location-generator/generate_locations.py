@@ -1,6 +1,6 @@
 """
 Shiny Rhino - Location Page Generator
-Generates static HTML location pages using 3-part parallel GPT content generation.
+Generates static HTML location pages using 3-part parallel Gemini content generation.
 Based on the US Turf Direct generator architecture.
 
 Usage:
@@ -19,7 +19,7 @@ from datetime import datetime
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from threading import Lock
-from openai import OpenAI
+from google import genai
 
 # ==================================
 # CONFIGURATION
@@ -40,9 +40,10 @@ PROMPT_DIR = BASE_DIR / "prompts"
 # Site
 SITE_URL = "https://myshinyrhino.com"
 
-# OpenAI
-client = OpenAI()  # Uses OPENAI_API_KEY env var
-MODEL = "gpt-5"
+# Gemini
+GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
+client = genai.Client(api_key=GOOGLE_API_KEY)
+MODEL = "gemini-3-flash-preview"  # Will switch to gemini-3-flash when GA
 MAX_TOKENS = 4000
 
 # ==================================
@@ -140,16 +141,19 @@ def fill_prompt(prompt_template, loc):
     )
 
 def generate_part(prompt_text, loc, part_name):
-    """Call GPT to generate one content part."""
+    """Call Gemini to generate one content part."""
     filled = fill_prompt(prompt_text, loc)
     try:
-        response = client.chat.completions.create(
+        response = client.models.generate_content(
             model=MODEL,
-            messages=[{"role": "user", "content": filled}],
-            max_tokens=MAX_TOKENS,
-            temperature=0.7,
+            contents=filled,
+            config={
+                "max_output_tokens": MAX_TOKENS,
+                "temperature": 0.7,
+                "thinking_config": {"thinking_level": "low"},
+            },
         )
-        content = response.choices[0].message.content.strip()
+        content = response.text.strip()
         # Clean up markdown artifacts
         content = re.sub(r"^```html?\s*", "", content)
         content = re.sub(r"\s*```$", "", content)
@@ -283,6 +287,8 @@ def process_page(loc, template, prompts, all_locations, progress):
 # MAIN
 # ==================================
 def main():
+    global TESTMODE, RESUME_MODE, PAGE_WORKERS
+
     parser = argparse.ArgumentParser(description="Generate Shiny Rhino location pages")
     parser.add_argument("--states", nargs="+", help="Generate only these states")
     parser.add_argument("--test", action="store_true", help="Test mode (3 pages only)")
@@ -290,7 +296,6 @@ def main():
     parser.add_argument("--no-resume", action="store_true", help="Regenerate all pages")
     args = parser.parse_args()
 
-    global TESTMODE, RESUME_MODE, PAGE_WORKERS
     if args.test:
         TESTMODE = True
     if args.no_resume:

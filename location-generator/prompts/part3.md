@@ -41,9 +41,8 @@ Plus 2 questions specific to {city} or {state} (local climate, common issues, et
 </div>
 
 ### 4. Schema Markup (output at the very end, after all visible content)
-Output TWO separate script blocks:
+Output ONLY a LocalBusiness schema. Do NOT output FAQPage schema (it is restricted by Google).
 
-**LocalBusiness Schema:**
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -67,8 +66,12 @@ Output TWO separate script blocks:
 }
 </script>
 
-**FAQPage Schema:**
-Build this dynamically from the FAQ questions above. Use valid JSON-LD with @type FAQPage.
+## Writing Style (CRITICAL for SEO):
+- Write in SHORT, self-contained paragraphs of 30-50 words each
+- Each paragraph should make ONE clear point that can stand alone as a quotable passage
+- Avoid walls of text over 100 words per paragraph
+- Use clear topic sentences that answer specific questions a searcher might ask
+- FAQ answers should be concise (2-3 sentences) and directly answer the question
 
 ## Rules:
 - Use {city} name 5-8 times naturally throughout the content
@@ -76,4 +79,5 @@ Build this dynamically from the FAQ questions above. Use valid JSON-LD with @typ
 - Pure HTML only. No markdown. No code fences.
 - No em dashes or en dashes. Use regular hyphens only.
 - Schema JSON must be valid - escape all quotes properly
+- Do NOT output FAQPage schema - Google restricted it to government/health sites
 - Do NOT wrap output in ```html``` or any code blocks
