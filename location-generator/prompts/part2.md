@@ -38,12 +38,12 @@ Write PURE HTML content (no markdown, no code fences, no DOCTYPE/html/head/body 
 - Mention: biodegradable solutions, safe for kids and pets, Green Seal certified products
 - Reference local environmental concerns if applicable (water conservation in dry states, etc.)
 
-## Writing Style (CRITICAL for SEO):
-- Write in SHORT, self-contained paragraphs of 30-50 words each
-- Each paragraph should make ONE clear point that can stand alone as a quotable passage
-- Avoid walls of text over 100 words per paragraph
-- Use clear topic sentences that answer specific questions a searcher might ask
-- This format is critical for AI search engines (Google SGE, ChatGPT, Perplexity) which extract short passages to cite
+## Writing Style (MANDATORY - DO NOT IGNORE):
+- EVERY paragraph must be 2-3 sentences MAX. No paragraph should exceed 50 words.
+- If you write a paragraph longer than 3 sentences, SPLIT IT into multiple <p> tags.
+- Each <p> tag = one focused point. Never combine multiple ideas in one paragraph.
+- This is NON-NEGOTIABLE. Long paragraphs will be rejected.
+- This short format helps AI search engines extract and cite passages.
 
 ## Rules:
 - Use {city} name 6-10 times naturally throughout the content

@@ -31,12 +31,12 @@ Write 4 service subsections, each with:
 4. **H3: Specialty Services** - Mention hardwood floors, area rugs, water damage, vehicle interiors
    Link: <a href="/services/water">water damage restoration</a>
 
-## Writing Style (CRITICAL for SEO):
-- Write in SHORT, self-contained paragraphs of 30-50 words each
-- Each paragraph should make ONE clear point that can stand alone as a quotable passage
-- Avoid walls of text over 100 words per paragraph
-- Use clear topic sentences that answer specific questions a searcher might ask
-- This format is critical for AI search engines (Google SGE, ChatGPT, Perplexity) which extract short passages to cite
+## Writing Style (MANDATORY - DO NOT IGNORE):
+- EVERY paragraph must be 2-3 sentences MAX. No paragraph should exceed 50 words.
+- If you write a paragraph longer than 3 sentences, SPLIT IT into multiple <p> tags.
+- Each <p> tag = one focused point. Never combine multiple ideas in one paragraph.
+- This is NON-NEGOTIABLE. Long paragraphs will be rejected.
+- This short format helps AI search engines extract and cite passages.
 
 ## Rules:
 - Use {city} name 8-12 times naturally throughout the content

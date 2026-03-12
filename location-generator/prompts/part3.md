@@ -164,12 +164,12 @@ Build this dynamically from ALL the FAQ questions above. Use this exact format:
 }
 </script>
 
-## Writing Style (CRITICAL for SEO):
-- Write in SHORT, self-contained paragraphs of 30-50 words each
-- Each paragraph should make ONE clear point that can stand alone as a quotable passage
-- Avoid walls of text over 100 words per paragraph
-- Use clear topic sentences that answer specific questions a searcher might ask
-- FAQ answers should be concise (2-3 sentences) and directly answer the question
+## Writing Style (MANDATORY - DO NOT IGNORE):
+- EVERY paragraph must be 2-3 sentences MAX. No paragraph should exceed 50 words.
+- If you write a paragraph longer than 3 sentences, SPLIT IT into multiple <p> tags.
+- Each <p> tag = one focused point. Never combine multiple ideas in one paragraph.
+- FAQ answers: 2-3 sentences max, directly answer the question.
+- This is NON-NEGOTIABLE. Long paragraphs will be rejected.
 
 ## Rules:
 - Use {city} name 5-8 times naturally throughout the content
