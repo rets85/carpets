@@ -143,6 +143,7 @@ const routes = {
   '/': renderHome,
   '/quote': () => renderQuote(false),
   '/quote/commercial': () => renderQuote(true),
+  '/checkout': renderCheckout,
   '/services/carpet': () => renderService('carpet'),
   '/services/upholstery': () => renderService('upholstery'),
   '/services/tile': () => renderService('tile'),
@@ -557,7 +558,7 @@ function renderQuote(isCommercial) {
               <span>Total</span>
               <span id="calcTotal">$0</span>
             </div>
-            <button class="btn btn-primary btn-full" onclick="calcSchedule()">Schedule Cleaning</button>
+            <button class="btn btn-primary btn-full" onclick="calcProceedToCheckout()">Proceed to Checkout</button>
           </div>
         </div>
       </div>
@@ -704,6 +705,18 @@ function calcUpdateSummary() {
   document.getElementById('calcTotal').textContent = '$' + Math.round(total * 100) / 100;
 }
 
+function calcProceedToCheckout() {
+  const state = window._calcState;
+  const hasItems = Object.values(state).some(s => s.qty > 0);
+  if (!hasItems) { showToast('Please add at least one item first.'); return; }
+  // Save calc state to sessionStorage for checkout page
+  sessionStorage.setItem('checkoutData', JSON.stringify({
+    calcState: state,
+    zipData: window._zipData
+  }));
+  navigate('/checkout');
+}
+
 function calcSchedule() {
   const state = window._calcState;
   const hasItems = Object.values(state).some(s => s.qty > 0);
@@ -759,6 +772,319 @@ function handleZipQuote(e) {
     const zipInput = document.getElementById('quoteZip');
     if (zipInput) zipInput.value = zip;
   }, 100);
+}
+
+// ---- Checkout Page ----
+function renderCheckout() {
+  const raw = sessionStorage.getItem('checkoutData');
+  if (!raw) {
+    document.getElementById('app').innerHTML = `
+      <div class="page-content"><div class="container" style="text-align:center;padding:120px 20px;">
+        <h1>No Items Selected</h1>
+        <p>Please build your quote first, then proceed to checkout.</p>
+        <a href="/quote" class="btn btn-primary" data-link style="margin-top:20px;">Go to Quote Calculator</a>
+      </div></div>`;
+    return;
+  }
+
+  const { calcState, zipData } = JSON.parse(raw);
+  const pricing = CMS.pricing || { categories: [], hiddenFee: { label: 'Service Fee', amount: 0 } };
+  const mult = (zipData && zipData.multiplier) ? zipData.multiplier : 1;
+
+  // Build order items
+  const orderItems = [];
+  pricing.categories.forEach((cat, ci) => {
+    cat.items.forEach((item, ii) => {
+      const key = ci + '_' + ii;
+      const s = calcState[key];
+      if (!s || s.qty === 0) return;
+      const adjPrice = Math.round(item.price * mult * 100) / 100;
+      const lineTotal = adjPrice * s.qty;
+      const selectedAddons = [];
+      (item.addons || []).forEach((addon, ai) => {
+        if (s.addons[ai]) {
+          const adjAddon = Math.round(addon.price * mult * 100) / 100;
+          selectedAddons.push({ name: addon.name, price: adjAddon, total: adjAddon * s.qty });
+        }
+      });
+      orderItems.push({ name: item.name, qty: s.qty, unitPrice: adjPrice, lineTotal, addons: selectedAddons });
+    });
+  });
+
+  if (orderItems.length === 0) {
+    document.getElementById('app').innerHTML = `
+      <div class="page-content"><div class="container" style="text-align:center;padding:120px 20px;">
+        <h1>No Items Selected</h1>
+        <p>Please build your quote first, then proceed to checkout.</p>
+        <a href="/quote" class="btn btn-primary" data-link style="margin-top:20px;">Go to Quote Calculator</a>
+      </div></div>`;
+    return;
+  }
+
+  let subtotal = 0;
+  orderItems.forEach(item => {
+    subtotal += item.lineTotal;
+    item.addons.forEach(a => { subtotal += a.total; });
+  });
+  const fee = pricing.hiddenFee?.amount || 0;
+  const total = subtotal + fee;
+
+  document.getElementById('app').innerHTML = `
+    ${breadcrumb([{ label: 'Home', href: '/' }, { label: 'Get a Quote', href: '/quote' }, { label: 'Checkout' }])}
+
+    <section class="checkout-page">
+      <div class="container">
+        <div class="checkout-header">
+          <h1>${ICONS.shield} Secure Checkout</h1>
+          <a href="/quote" class="btn btn-sm btn-outline" data-link>Back to Quote</a>
+        </div>
+
+        <div class="checkout-layout">
+          <!-- Left: Order Summary -->
+          <div class="checkout-summary">
+            <div class="checkout-card">
+              <div class="checkout-card-header checkout-summary-toggle" onclick="document.querySelector('.checkout-summary-body').classList.toggle('collapsed');this.classList.toggle('collapsed');">
+                <h2>Order Summary</h2>
+                <span class="checkout-toggle-icon">&#9660;</span>
+              </div>
+              <div class="checkout-summary-body">
+                ${zipData ? `<div class="checkout-zip-info">Pricing for <strong>${zipData.stateName}</strong> (${zipData.zip})</div>` : ''}
+                <div class="checkout-items">
+                  ${orderItems.map(item => `
+                    <div class="checkout-line-item">
+                      <div class="checkout-line-main">
+                        <span class="checkout-line-name">${item.name} <span class="checkout-line-qty">x${item.qty}</span></span>
+                        <span class="checkout-line-price">$${(item.lineTotal).toFixed(2)}</span>
+                      </div>
+                      <div class="checkout-line-unit">$${item.unitPrice.toFixed(2)} / each</div>
+                      ${item.addons.map(a => `
+                        <div class="checkout-line-addon">
+                          <span>+ ${a.name} x${item.qty}</span>
+                          <span>$${a.total.toFixed(2)}</span>
+                        </div>
+                      `).join('')}
+                    </div>
+                  `).join('')}
+                </div>
+                ${fee > 0 ? `<div class="checkout-fee"><span>${pricing.hiddenFee.label}</span><span>$${fee.toFixed(2)}</span></div>` : ''}
+
+                <!-- Promo Code -->
+                <div class="checkout-promo">
+                  <button class="checkout-promo-toggle" onclick="document.getElementById('promoSection').classList.toggle('open')">Have a promo code?</button>
+                  <div id="promoSection" class="checkout-promo-section">
+                    <div class="checkout-promo-input">
+                      <input type="text" id="promoCode" placeholder="Enter promo code">
+                      <button class="btn btn-sm btn-outline" onclick="showToast('Promo codes coming soon!')">Apply</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="checkout-total">
+                  <span>Total</span>
+                  <span>$${total.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Trust Signals -->
+            <div class="checkout-trust">
+              <div class="checkout-trust-item">
+                ${ICONS.shield}
+                <span>100% Satisfaction Guarantee</span>
+              </div>
+              <div class="checkout-trust-item">
+                ${ICONS.check}
+                <span>No Hidden Fees</span>
+              </div>
+              <div class="checkout-trust-item">
+                <span class="checkout-stars">${ICONS.star}${ICONS.star}${ICONS.star}${ICONS.star}${ICONS.star}</span>
+                <span>4.9/5 from 2,000+ Reviews</span>
+              </div>
+              <div class="checkout-trust-item">
+                ${ICONS.badge}
+                <span>IICRC Certified Technicians</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Customer Form + Payment -->
+          <div class="checkout-form-section">
+            <div class="checkout-card">
+              <div class="checkout-card-header"><h2>Your Information</h2></div>
+              <form id="checkoutForm" onsubmit="checkoutSubmit(event)">
+                <div class="checkout-form-grid">
+                  <div class="checkout-field">
+                    <label for="coFirstName">First Name *</label>
+                    <input type="text" id="coFirstName" required oninput="checkoutValidate()">
+                  </div>
+                  <div class="checkout-field">
+                    <label for="coLastName">Last Name *</label>
+                    <input type="text" id="coLastName" required oninput="checkoutValidate()">
+                  </div>
+                  <div class="checkout-field">
+                    <label for="coEmail">Email Address *</label>
+                    <input type="email" id="coEmail" required oninput="checkoutValidate()">
+                  </div>
+                  <div class="checkout-field">
+                    <label for="coPhone">Phone Number *</label>
+                    <input type="tel" id="coPhone" required oninput="checkoutValidate()">
+                  </div>
+                  <div class="checkout-field checkout-field--full">
+                    <label for="coAddress">Street Address *</label>
+                    <input type="text" id="coAddress" required oninput="checkoutValidate()">
+                  </div>
+                  <div class="checkout-field">
+                    <label for="coCity">City *</label>
+                    <input type="text" id="coCity" required oninput="checkoutValidate()">
+                  </div>
+                  <div class="checkout-field checkout-field--half">
+                    <label for="coState">State *</label>
+                    <input type="text" id="coState" value="${zipData ? zipData.stateName : ''}" required oninput="checkoutValidate()">
+                  </div>
+                  <div class="checkout-field checkout-field--half">
+                    <label for="coZip">ZIP Code *</label>
+                    <input type="text" id="coZip" value="${zipData ? zipData.zip : ''}" maxlength="5" required oninput="checkoutValidate()">
+                  </div>
+                </div>
+
+                <div class="checkout-schedule">
+                  <h3>Preferred Schedule</h3>
+                  <div class="checkout-form-grid">
+                    <div class="checkout-field">
+                      <label for="coDate">Preferred Date</label>
+                      <input type="date" id="coDate">
+                    </div>
+                    <div class="checkout-field">
+                      <label for="coTime">Preferred Time</label>
+                      <select id="coTime">
+                        <option value="">Select Time</option>
+                        <option>Morning (8am-12pm)</option>
+                        <option>Afternoon (12pm-4pm)</option>
+                        <option>Evening (4pm-8pm)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Mock Stripe Payment Section -->
+                <div class="checkout-payment">
+                  <div class="checkout-payment-header">
+                    <h3>${ICONS.shield} Payment Details</h3>
+                    <div class="checkout-secure-badge">
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                      SSL Encrypted
+                    </div>
+                  </div>
+                  <div class="checkout-stripe-mock">
+                    <div class="checkout-stripe-card">
+                      <div class="checkout-stripe-field">
+                        <label>Card number</label>
+                        <div class="checkout-stripe-input">
+                          <span class="checkout-stripe-placeholder">1234 1234 1234 1234</span>
+                          <div class="checkout-card-brands">
+                            <svg viewBox="0 0 38 24" width="30" height="19"><rect width="38" height="24" rx="3" fill="#1A1F71"/><path d="M15.3 16.2L16.9 7.8H19.2L17.6 16.2H15.3Z" fill="white"/><path d="M24.7 8C24.2 7.8 23.4 7.6 22.4 7.6C20.1 7.6 18.5 8.8 18.5 10.5C18.5 11.7 19.5 12.4 20.3 12.8C21.1 13.2 21.4 13.5 21.4 13.9C21.4 14.5 20.7 14.8 20 14.8C19 14.8 18.5 14.6 17.7 14.3L17.4 14.1L17.1 16C17.7 16.3 18.8 16.5 20 16.5C22.5 16.5 24.1 15.3 24.1 13.5C24.1 12.6 23.5 11.9 22.3 11.3C21.6 10.9 21.1 10.7 21.1 10.2C21.1 9.8 21.6 9.4 22.5 9.4C23.3 9.4 23.9 9.5 24.3 9.7L24.5 9.8L24.7 8Z" fill="white"/><path d="M28.5 7.8H26.7C26.1 7.8 25.7 8 25.5 8.6L22.1 16.2H24.6L25.1 14.9H28.1L28.4 16.2H30.6L28.5 7.8ZM25.8 13.1L26.9 10.2L27.5 13.1H25.8Z" fill="white"/><path d="M13.8 7.8L11.5 13.4L11.2 11.9C10.8 10.5 9.4 9 7.9 8.2L10 16.2H12.5L16.3 7.8H13.8Z" fill="white"/><path d="M9.7 7.8H6L5.9 8C8.9 8.7 10.9 10.5 11.5 12.6L10.8 8.7C10.7 8 10.3 7.8 9.7 7.8Z" fill="#F9A533"/></svg>
+                            <svg viewBox="0 0 38 24" width="30" height="19"><rect width="38" height="24" rx="3" fill="#EB001B" fill-opacity="0"/><rect width="38" height="24" rx="3" fill="#F7F7F7"/><circle cx="15" cy="12" r="7" fill="#EB001B"/><circle cx="23" cy="12" r="7" fill="#F79E1B"/><path d="M19 7.3C20.3 8.4 21.1 10.1 21.1 12C21.1 13.9 20.3 15.6 19 16.7C17.7 15.6 16.9 13.9 16.9 12C16.9 10.1 17.7 8.4 19 7.3Z" fill="#FF5F00"/></svg>
+                            <svg viewBox="0 0 38 24" width="30" height="19"><rect width="38" height="24" rx="3" fill="#006FCF"/><path d="M6 12.3L8.4 7.3H11L13.5 16.7H11.1L10.7 15H8L7.3 16.7H5L6 12.3ZM8.5 13.3H10.3L9.3 9.5L8.5 13.3Z" fill="white"/><path d="M14 7.3H16.8L17.8 13.5L20 7.3H22.4L18.8 16.7H16.2L14 7.3Z" fill="white"/></svg>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="checkout-stripe-row">
+                        <div class="checkout-stripe-field checkout-stripe-field--half">
+                          <label>Expiration</label>
+                          <div class="checkout-stripe-input"><span class="checkout-stripe-placeholder">MM / YY</span></div>
+                        </div>
+                        <div class="checkout-stripe-field checkout-stripe-field--half">
+                          <label>CVC</label>
+                          <div class="checkout-stripe-input"><span class="checkout-stripe-placeholder">CVC</span></div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="checkout-stripe-badge">
+                      <svg viewBox="0 0 60 25" width="50" height="21"><path d="M5.4 11.5c0-3.8 3.2-5.5 5.6-5.5 1.8 0 3.3.9 3.7 2.4l-1.8.8c-.3-.9-1-1.5-1.9-1.5-1.6 0-3.3 1.3-3.3 3.8 0 1.7.9 3.6 3.3 3.6.9 0 1.8-.5 2.1-1.5l1.8.6c-.5 1.7-2 2.6-3.9 2.6-3.2 0-5.6-2.1-5.6-5.3z" fill="#635BFF"/><path d="M16.4 3h2.1v13.6h-2.1V3zm5.7 4.2c2.6 0 4.4 2 4.4 4.7v.7h-6.8c.1 1.6 1.3 2.8 3 2.8 1.1 0 2-.4 2.7-1.2l1.1 1.2c-.9 1.1-2.3 1.7-3.8 1.7-2.8 0-5-1.8-5-4.9 0-2.8 2-5 4.4-5zm2.3 4c-.1-1.2-1-2.4-2.3-2.4-1.4 0-2.3 1.1-2.5 2.4h4.8z" fill="#635BFF"/><path d="M28 16.6V7.4h2.1v1.4c.7-1 1.7-1.6 3-1.6v2.2c-.2 0-.4-.1-.6-.1-1 0-2.2.7-2.4 2v5.3H28zm7 0V7.4h2.1v1.3c.6-.9 1.7-1.5 2.8-1.5 2 0 3.1 1.3 3.1 3.3v6.1h-2.1v-5.5c0-1.3-.6-2.2-1.8-2.2-1.2 0-2 .9-2 2.3v5.4H35zm10.2-12h2.2v2.1h-2.2V4.6zm0 2.8h2.1v9.2h-2.1V7.4z" fill="#635BFF"/><path d="M48 16.8c2.6 0 4.4-2 4.4-4.9 0-2.9-1.8-4.9-4.4-4.9-1.3 0-2.4.6-3 1.5V7.4h-2.1v16h2.1v-5c.6.9 1.7 1.5 3 1.5v-.1zm-.4-1.7c-1.6 0-2.8-1.3-2.8-3.2s1.2-3.2 2.8-3.2c1.6 0 2.6 1.3 2.6 3.2s-1 3.2-2.6 3.2z" fill="#635BFF"/><path d="M57.2 15.3c-.8 0-1.2-.5-1.2-1.3V9h1.8V7.4H56V4.6h-2.1v2.8h-1.4V9h1.4v5.2c0 1.8 1 2.8 2.8 2.8.5 0 1-.1 1.3-.2v-1.7c-.2.1-.5.2-.8.2z" fill="#635BFF"/></svg>
+                      <span>Payments powered by Stripe</span>
+                    </div>
+                    <p class="checkout-stripe-note">Payment form will be activated when Stripe integration is complete. Your booking will be confirmed by our team.</p>
+                  </div>
+                </div>
+
+                <!-- Submit -->
+                <button type="submit" id="checkoutSubmitBtn" class="btn btn-primary btn-lg btn-full checkout-submit-btn" disabled>
+                  Complete Booking - $${total.toFixed(2)}
+                </button>
+                <p class="checkout-disclaimer">By completing this booking, you agree to our terms of service. You will receive a confirmation email with your appointment details.</p>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function checkoutValidate() {
+  const fields = ['coFirstName', 'coLastName', 'coEmail', 'coPhone', 'coAddress', 'coCity', 'coState', 'coZip'];
+  const allFilled = fields.every(id => {
+    const el = document.getElementById(id);
+    return el && el.value.trim() !== '' && el.checkValidity();
+  });
+  const btn = document.getElementById('checkoutSubmitBtn');
+  if (btn) btn.disabled = !allFilled;
+}
+
+async function checkoutSubmit(e) {
+  e.preventDefault();
+  const raw = sessionStorage.getItem('checkoutData');
+  if (!raw) return;
+  const { calcState, zipData } = JSON.parse(raw);
+  const pricing = CMS.pricing || { categories: [], hiddenFee: { label: 'Service Fee', amount: 0 } };
+  const mult = (zipData && zipData.multiplier) ? zipData.multiplier : 1;
+
+  const items = [];
+  pricing.categories.forEach((cat, ci) => {
+    cat.items.forEach((item, ii) => {
+      const key = ci + '_' + ii;
+      const s = calcState[key];
+      if (!s || s.qty === 0) return;
+      const adjPrice = Math.round(item.price * mult * 100) / 100;
+      const selectedAddons = (item.addons || []).filter((_, ai) => s.addons[ai]).map(a => a.name);
+      items.push({ name: item.name, qty: s.qty, price: adjPrice, addons: selectedAddons });
+    });
+  });
+
+  const data = {
+    firstName: document.getElementById('coFirstName').value,
+    lastName: document.getElementById('coLastName').value,
+    name: document.getElementById('coFirstName').value + ' ' + document.getElementById('coLastName').value,
+    email: document.getElementById('coEmail').value,
+    phone: document.getElementById('coPhone').value,
+    address: document.getElementById('coAddress').value,
+    city: document.getElementById('coCity').value,
+    state: document.getElementById('coState').value,
+    zip: document.getElementById('coZip').value,
+    date: document.getElementById('coDate').value,
+    time: document.getElementById('coTime').value,
+    items,
+    total: document.querySelector('.checkout-total span:last-child').textContent,
+  };
+
+  const btn = document.getElementById('checkoutSubmitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Processing...';
+
+  try {
+    await fetch('/api/quote', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+  } catch (err) { /* ignore */ }
+
+  sessionStorage.removeItem('checkoutData');
+  document.getElementById('app').innerHTML = `
+    <div class="page-content"><div class="container" style="text-align:center;padding:100px 20px;max-width:600px;">
+      <div class="checkout-success-icon">${ICONS.check}</div>
+      <h1 style="color:var(--green);margin-top:16px;">Booking Confirmed!</h1>
+      <p style="font-size:1.1rem;margin:16px 0;">Thank you, ${data.firstName}! We've received your cleaning request and will contact you at <strong>${data.email}</strong> to confirm your appointment.</p>
+      <p style="color:var(--text-muted);margin-bottom:32px;">A member of our team will reach out within 24 hours.</p>
+      <a href="/" class="btn btn-primary btn-lg" data-link>Back to Home</a>
+    </div></div>`;
+  bindLinks();
 }
 
 // ---- Service Page ----
